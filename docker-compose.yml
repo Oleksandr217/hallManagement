@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    container_name: conference-booking-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: conference_booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - conference_booking_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d conference_booking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: conference-booking-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=conference_booking;Username=postgres;Password=postgres"
+    ports:
+      - "8080:8080"
+
+volumes:
+  conference_booking_data:
